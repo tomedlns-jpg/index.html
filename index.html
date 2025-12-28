@@ -48,7 +48,6 @@
             opacity: 0;
         }
 
-        /* Custom Range Slider Styling */
         input[type=range] {
             height: 6px;
             -webkit-appearance: none;
@@ -69,7 +68,7 @@
 
     <div class="max-w-md mx-auto px-4 pt-8">
         <!-- Logo/Header -->
-        <header class="mb-8 text-center">
+        <header class="mb-8 text-center relative">
             <h1 class="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-indigo-400 via-purple-400 to-rose-400">
                 GAME NIGHT
             </h1>
@@ -123,7 +122,7 @@
                     </button>
 
                     <div id="im-secret-box" class="hidden py-8">
-                        <p class="text-slate-500 text-xs font-bold uppercase mb-2">Your Role</p>
+                        <p id="im-category-hint" class="text-slate-500 text-xs font-bold uppercase mb-2">Your Role</p>
                         <h3 id="im-secret-word" class="text-4xl font-black text-indigo-400 uppercase tracking-tight">APPLE</h3>
                     </div>
                 </div>
@@ -264,16 +263,46 @@
     <script>
         // --- DATA & STATE ---
         const categories = {
-            "Objects": ["Pencil", "Umbrella", "Toaster", "Backpack", "Watch", "Spoon", "Telescope", "Guitar", "Ladder", "Bucket"],
-            "People": ["Einstein", "Elvis", "Napoleon", "Cleopatra", "Batman", "Messi", "Madonna", "Gandhi", "Aristotle", "Picasso"],
-            "Countries": ["Japan", "Brazil", "Canada", "Egypt", "France", "Australia", "Thailand", "Mexico", "Iceland", "Kenya"],
-            "Animals": ["Elephant", "Giraffe", "Penguin", "Octopus", "Cheetah", "Kangaroo", "Wolf", "Platypus", "Eagle", "Cobra"],
-            "Movies": ["Titanic", "Inception", "Jaws", "Avatar", "Shrek", "Star Wars", "Matrix", "Interstellar", "Alien", "Frozen"],
-            "Food": ["Pizza", "Sushi", "Hamburger", "Pancakes", "Croissant", "Tacos", "Lasagna", "Dim Sum", "Curry", "Steak"],
-            "Cities": ["London", "Paris", "New York", "Tokyo", "Rome", "Berlin", "Dubai", "Sydney", "Barcelona", "Toronto"],
-            "Brands": ["Apple", "Nike", "Google", "Tesla", "Coca-Cola", "Lego", "McDonalds", "Amazon", "IKEA", "Netflix"],
-            "Jobs": ["Chef", "Doctor", "Pilot", "Artist", "Astronaut", "Firefighter", "Judge", "Diver", "Farmer", "Architect"],
-            "Sports": ["Tennis", "Boxing", "Cricket", "Soccer", "Golf", "Swimming", "Skiing", "Fencing", "Rugby", "Surfing"]
+            "Objects": [
+                "Pencil", "Umbrella", "Toaster", "Backpack", "Watch", "Spoon", "Telescope", "Guitar", "Ladder", "Bucket",
+                "Hammer", "Compass", "Key", "Mirror", "Candle", "Flashlight", "Suitcase", "Violin", "Headphones", "Microscope"
+            ],
+            "People": [
+                "Einstein", "Elvis", "Napoleon", "Cleopatra", "Batman", "Messi", "Madonna", "Gandhi", "Aristotle", "Picasso",
+                "Shakespeare", "Mozart", "Elon Musk", "Marie Curie", "Abraham Lincoln", "Vincent van Gogh", "Isaac Newton", "Steve Jobs", "Michael Jordan", "Marilyn Monroe"
+            ],
+            "Countries": [
+                "Japan", "Brazil", "Canada", "Egypt", "France", "Australia", "Thailand", "Mexico", "Iceland", "Kenya",
+                "Norway", "Vietnam", "Peru", "Greece", "India", "Germany", "New Zealand", "Italy", "South Africa", "Turkey"
+            ],
+            "Animals": [
+                "Elephant", "Giraffe", "Penguin", "Octopus", "Cheetah", "Kangaroo", "Wolf", "Platypus", "Eagle", "Cobra",
+                "Sloth", "Badger", "Llama", "Red Panda", "Shark", "Gorilla", "Chameleon", "Tiger", "Owl", "Otter"
+            ],
+            "Movies": [
+                "Titanic", "Inception", "Jaws", "Avatar", "Shrek", "Star Wars", "Matrix", "Interstellar", "Alien", "Frozen",
+                "Gladiator", "Toy Story", "Psycho", "Parasite", "Pulp Fiction", "The Lion King", "Jurassic Park", "Batman", "Coco", "Finding Nemo"
+            ],
+            "Food": [
+                "Pizza", "Sushi", "Hamburger", "Pancakes", "Croissant", "Tacos", "Lasagna", "Dim Sum", "Curry", "Steak",
+                "Pasta", "Donut", "Bacon", "Waffle", "Ice Cream", "Sandwich", "Falafel", "Pad Thai", "Paella", "Cheese"
+            ],
+            "Cities": [
+                "London", "Paris", "New York", "Tokyo", "Rome", "Berlin", "Dubai", "Sydney", "Barcelona", "Toronto",
+                "Moscow", "Seoul", "Lisbon", "Amsterdam", "Singapore", "Hong Kong", "Cairo", "Rio de Janeiro", "Prague", "Vienna"
+            ],
+            "Brands": [
+                "Apple", "Nike", "Google", "Tesla", "Coca-Cola", "Lego", "McDonalds", "Amazon", "IKEA", "Netflix",
+                "Sony", "Adidas", "Intel", "Disney", "Samsung", "BMW", "Microsoft", "Rolex", "Red Bull", "Spotify"
+            ],
+            "Jobs": [
+                "Chef", "Doctor", "Pilot", "Artist", "Astronaut", "Firefighter", "Judge", "Diver", "Farmer", "Architect",
+                "Plumber", "Nurse", "Lawyer", "Scientist", "Police Officer", "Electrician", "Dentist", "Teacher", "Engineer", "Journalist"
+            ],
+            "Sports": [
+                "Tennis", "Boxing", "Cricket", "Soccer", "Golf", "Swimming", "Skiing", "Fencing", "Rugby", "Surfing",
+                "Baseball", "Hockey", "Cycling", "Basketball", "Gymnastics", "Wrestling", "Archery", "Bowling", "Volleyball", "Darts"
+            ]
         };
 
         let activeTab = 'imposter';
@@ -306,7 +335,7 @@
         }
 
         // --- IMPOSTER ---
-        let impState = { players: 0, imposters: 0, secret: '', roles: [], currentIdx: 0 };
+        let impState = { players: 0, imposters: 0, secret: '', roles: [], currentIdx: 0, chosenCategory: '' };
 
         function initImposterCats() {
             const grid = document.getElementById('im-cats');
@@ -334,7 +363,10 @@
             const selected = Array.from(document.querySelectorAll('.im-cat-check:checked')).map(el => el.value);
             if (!selected.length) return alert("Select at least one category!");
 
-            const pool = selected.flatMap(cat => categories[cat]);
+            const randomCat = selected[Math.floor(Math.random() * selected.length)];
+            const pool = categories[randomCat];
+            
+            impState.chosenCategory = randomCat;
             impState.secret = pool[Math.floor(Math.random() * pool.length)];
             impState.players = parseInt(document.getElementById('im-p-count').value);
             impState.imposters = parseInt(document.getElementById('im-i-count').value);
@@ -365,8 +397,17 @@
         function imReveal() {
             const isImp = impState.roles[impState.currentIdx] === 'imposter';
             const wordEl = document.getElementById('im-secret-word');
-            wordEl.innerText = isImp ? "YOU ARE THE IMPOSTER" : impState.secret;
-            wordEl.className = isImp ? "text-2xl font-black text-rose-500" : "text-4xl font-black text-indigo-400 uppercase tracking-tight";
+            const hintEl = document.getElementById('im-category-hint');
+            
+            if (isImp) {
+                hintEl.innerText = `Category: ${impState.chosenCategory}`;
+                wordEl.innerText = "YOU ARE THE IMPOSTER";
+                wordEl.className = "text-2xl font-black text-rose-500";
+            } else {
+                hintEl.innerText = "Your Role";
+                wordEl.innerText = impState.secret;
+                wordEl.className = "text-4xl font-black text-indigo-400 uppercase tracking-tight";
+            }
             
             document.getElementById('im-reveal-btn').classList.add('hidden');
             document.getElementById('im-secret-box').classList.remove('hidden');
@@ -425,9 +466,14 @@
             const cont = document.getElementById('wh-bid-inputs');
             if (!cont) return;
             cont.innerHTML = '';
-            whState.players.forEach((p, i) => {
+            
+            // Loop starts from dealer + 1 to rotate bidding order
+            for (let j = 0; j < whState.players.length; j++) {
+                const i = (dIdx + 1 + j) % whState.players.length;
+                const p = whState.players[i];
                 const isD = i === dIdx;
                 const canZero = whState.zeros[i] < 2;
+                
                 cont.innerHTML += `
                     <div class="bg-slate-900/40 p-3 rounded-2xl border ${isD?'border-indigo-500':'border-slate-800'} flex justify-between items-center transition-all">
                         <div class="flex flex-col">
@@ -440,7 +486,7 @@
                         </div>
                     </div>
                 `;
-            });
+            }
             document.getElementById('wh-bid-phase').classList.remove('hidden');
             document.getElementById('wh-res-phase').classList.add('hidden');
             updateWhForbidden();
@@ -451,7 +497,9 @@
             const dIdx = whState.currentIdx % whState.players.length;
             let sumOthers = 0;
             document.querySelectorAll('.wh-bid-val').forEach((el, i) => {
-                if(i !== dIdx) sumOthers += (parseInt(el.value) || 0);
+                // The element index in DOM doesn't match whState index directly here, need to check ID
+                const pIdx = parseInt(el.id.split('-').pop());
+                if(pIdx !== dIdx) sumOthers += (parseInt(el.value) || 0);
             });
             const forb = cards - sumOthers;
             const lbl = document.getElementById('wh-forb-lbl');
@@ -462,13 +510,13 @@
             const cards = whState.seq[whState.currentIdx];
             const dIdx = whState.currentIdx % whState.players.length;
             let total = 0;
-            const bids = [];
+            const bids = new Array(whState.players.length);
             
             for(let i=0; i<whState.players.length; i++) {
                 const val = parseInt(document.getElementById(`wh-bid-${i}`).value);
                 if (isNaN(val) || val < 0) return showToast("Bids cannot be negative.");
                 if (val === 0 && whState.zeros[i] >= 2) return showToast(`${whState.players[i]} has bid zero too many times!`);
-                bids.push(val);
+                bids[i] = val;
                 total += val;
             }
 
@@ -477,14 +525,18 @@
             const resCont = document.getElementById('wh-res-inputs');
             if (!resCont) return;
             resCont.innerHTML = '';
-            whState.players.forEach((p, i) => {
+            
+            // Results can also be shown in shifted order for consistency
+            for (let j = 0; j < whState.players.length; j++) {
+                const i = (dIdx + 1 + j) % whState.players.length;
+                const p = whState.players[i];
                 resCont.innerHTML += `
                     <div class="bg-slate-900/40 p-3 rounded-2xl border border-slate-800 flex justify-between items-center">
                         <div class="flex flex-col"><span class="text-xs font-bold text-slate-300">${p}</span><span class="text-[9px] text-indigo-400 font-bold">Bidded: ${bids[i]}</span></div>
                         <input type="number" id="wh-res-${i}" min="0" class="bg-slate-800 w-12 text-center p-2 rounded-lg font-bold border border-slate-700">
                     </div>
                 `;
-            });
+            }
             document.getElementById('wh-bid-phase').classList.add('hidden');
             document.getElementById('wh-res-phase').classList.remove('hidden');
         }
@@ -503,7 +555,6 @@
 
             const scores = bids.map((b, i) => (b === ress[i] ? (10 + ress[i]) : ress[i]));
             
-            // Update zero streaks
             bids.forEach((b, i) => {
                 if (b === 0) whState.zeros[i]++;
                 else whState.zeros[i] = 0;
