@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Night Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus+Jakarta+Sans', sans-serif;
+            background-color: #0f172a;
+            color: #f1f5f9;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .active-tab {
+            border-bottom: 3px solid #6366f1;
+            color: #818cf8;
+            font-weight: 800;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .input-num::-webkit-inner-spin-button, 
+        .input-num::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-rank {
+            animation: slideUp 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        /* Custom Range Slider Styling */
+        input[type=range] {
+            height: 6px;
+            -webkit-appearance: none;
+            background: #334155;
+            border-radius: 5px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12 transition-colors duration-500">
+
+    <div class="max-w-md mx-auto px-4 pt-8">
+        <!-- Logo/Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-indigo-400 via-purple-400 to-rose-400">
+                GAME NIGHT
+            </h1>
+            <p class="text-slate-500 text-xs font-bold uppercase tracking-[0.2em] mt-1">Multi-Game Hub</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="flex justify-between border-b border-slate-800 mb-8 text-sm font-bold uppercase tracking-widest text-slate-500">
+            <button onclick="switchTab('imposter')" id="tab-imposter" class="pb-3 px-2 transition-all">Imposter</button>
+            <button onclick="switchTab('whist')" id="tab-whist" class="pb-3 px-2 transition-all">Whist</button>
+            <button onclick="switchTab('hearts')" id="tab-hearts" class="pb-3 px-2 transition-all">Hearts</button>
+        </nav>
+
+        <!-- IMPOSTER VIEW -->
+        <div id="view-imposter" class="space-y-6 hidden">
+            <div id="im-setup" class="glass rounded-[32px] p-6 space-y-6">
+                <div>
+                    <h2 class="text-lg font-bold text-indigo-400 mb-4">Categories</h2>
+                    <div id="im-cats" class="grid grid-cols-2 gap-2"></div>
+                </div>
+
+                <div class="space-y-6">
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-400 uppercase">Players</span>
+                            <span id="p-count-label" class="text-indigo-400 font-bold">5</span>
+                        </div>
+                        <input type="range" id="im-p-count" min="3" max="15" value="5" class="w-full" oninput="updateImLabels()">
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-400 uppercase">Imposters</span>
+                            <span id="i-count-label" class="text-rose-400 font-bold">1</span>
+                        </div>
+                        <input type="range" id="im-i-count" min="1" max="5" value="1" class="w-full" oninput="updateImLabels()">
+                    </div>
+                </div>
+
+                <button onclick="startImposter()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl font-black shadow-lg shadow-indigo-500/20 transition-all active:scale-95">
+                    Start Game
+                </button>
+            </div>
+
+            <div id="im-play" class="hidden glass rounded-[32px] p-8 text-center min-h-[350px] flex flex-col justify-center items-center">
+                <div id="im-reveal-zone">
+                    <p class="text-slate-500 text-xs font-bold uppercase mb-2">Current Player</p>
+                    <h2 id="im-player-name" class="text-3xl font-black mb-8">Player 1</h2>
+                    
+                    <button id="im-reveal-btn" onclick="imReveal()" class="bg-slate-700 w-full py-8 rounded-3xl font-black text-xl hover:bg-slate-600 transition-all border border-slate-600">
+                        TAP TO REVEAL
+                    </button>
+
+                    <div id="im-secret-box" class="hidden py-8">
+                        <p class="text-slate-500 text-xs font-bold uppercase mb-2">Your Role</p>
+                        <h3 id="im-secret-word" class="text-4xl font-black text-indigo-400 uppercase tracking-tight">APPLE</h3>
+                    </div>
+                </div>
+                <button id="im-next-btn" onclick="imNext()" class="hidden w-full border-2 border-indigo-500 text-indigo-500 py-4 rounded-2xl font-black mt-6">
+                    NEXT PLAYER
+                </button>
+            </div>
+        </div>
+
+        <!-- WHIST VIEW -->
+        <div id="view-whist" class="space-y-6 hidden">
+            <div id="wh-setup" class="glass rounded-[32px] p-6 space-y-6">
+                <h2 class="text-lg font-bold text-indigo-400">Whist Players</h2>
+                <div id="wh-p-list" class="space-y-3">
+                    <input type="text" placeholder="Player 1" class="wh-p-input w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 outline-none focus:border-indigo-500">
+                    <input type="text" placeholder="Player 2" class="wh-p-input w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 outline-none focus:border-indigo-500">
+                    <input type="text" placeholder="Player 3" class="wh-p-input w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 outline-none focus:border-indigo-500">
+                </div>
+                <button onclick="addWhPlayer()" class="text-xs font-bold text-indigo-400 uppercase tracking-widest">+ Add Player</button>
+                
+                <div class="pt-4 border-t border-slate-800">
+                    <span class="text-xs font-bold text-slate-400 uppercase mb-2 block">Game Length</span>
+                    <select id="wh-length" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 outline-none">
+                        <option value="7-1-7">7-1-7 (Standard)</option>
+                        <option value="10-1-10">10-1-10 (Full)</option>
+                        <option value="10-1">10-1 (Short)</option>
+                    </select>
+                </div>
+                <button onclick="startWhist()" class="w-full bg-indigo-600 py-4 rounded-2xl font-black shadow-lg">Start Whist</button>
+            </div>
+
+            <div id="wh-game" class="hidden space-y-4">
+                <div id="wh-scores" class="flex gap-2 overflow-x-auto pb-2 no-scrollbar"></div>
+                
+                <div class="glass rounded-[32px] p-6 border-t-4 border-indigo-500">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <span id="wh-round-lbl" class="text-xs font-bold text-slate-500 uppercase">Round 1</span>
+                            <h3 id="wh-card-lbl" class="text-2xl font-black">7 Cards</h3>
+                        </div>
+                        <div class="text-center">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase block">Trump</span>
+                            <div id="wh-trump-box" class="text-2xl font-bold bg-slate-900 rounded-lg px-3 py-1">♠️</div>
+                        </div>
+                    </div>
+
+                    <div id="wh-bid-phase" class="space-y-4">
+                        <div id="wh-bid-inputs" class="space-y-3"></div>
+                        <button onclick="lockWhBids()" class="w-full bg-slate-700 py-4 rounded-2xl font-black hover:bg-slate-600 transition-all">Lock Bids</button>
+                    </div>
+
+                    <div id="wh-res-phase" class="hidden space-y-4">
+                        <div id="wh-res-inputs" class="space-y-3"></div>
+                        <div class="flex gap-2">
+                            <button onclick="unlockWhBids()" class="w-1/3 bg-slate-800 py-4 rounded-2xl font-black text-slate-500">Back</button>
+                            <button onclick="finishWhRound()" class="w-2/3 bg-indigo-600 py-4 rounded-2xl font-black shadow-lg">Record Tricks</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass rounded-[24px] overflow-hidden">
+                    <table class="w-full text-[10px] text-left">
+                        <thead class="bg-slate-900/50 text-slate-500 uppercase font-black">
+                            <tr><th class="p-3">Rd</th><th class="p-3">Cards</th><th class="p-3 text-center">Score History</th></tr>
+                        </thead>
+                        <tbody id="wh-history" class="divide-y divide-slate-800"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- HEARTS VIEW -->
+        <div id="view-hearts" class="space-y-6 hidden">
+            <div id="he-setup" class="glass rounded-[32px] p-6 space-y-6">
+                <h2 class="text-lg font-bold text-rose-400">Hearts Players</h2>
+                <div id="he-p-list" class="space-y-3">
+                    <input type="text" placeholder="Player 1" class="he-p-input w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 outline-none focus:border-rose-500">
+                    <input type="text" placeholder="Player 2" class="he-p-input w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 outline-none focus:border-rose-500">
+                    <input type="text" placeholder="Player 3" class="he-p-input w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 outline-none focus:border-rose-500">
+                </div>
+                <button onclick="addHePlayer()" class="text-xs font-bold text-rose-400 uppercase tracking-widest">+ Add Player</button>
+                
+                <div class="pt-4 border-t border-slate-800">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-xs font-bold text-slate-400 uppercase">Target Score</span>
+                        <span id="he-target-lbl" class="text-rose-400 font-bold">500</span>
+                    </div>
+                    <input type="range" id="he-target-val" min="50" max="1000" step="50" value="500" class="w-full accent-rose-500" oninput="document.getElementById('he-target-lbl').innerText = this.value">
+                </div>
+                <button onclick="startHearts()" class="w-full bg-rose-600 py-4 rounded-2xl font-black shadow-lg shadow-rose-500/20">Start Game</button>
+            </div>
+
+            <div id="he-game" class="hidden space-y-4">
+                <div id="he-scores" class="flex gap-2 overflow-x-auto pb-2 no-scrollbar"></div>
+                
+                <div class="glass rounded-[32px] p-6 border-t-4 border-rose-500">
+                    <h3 class="text-xs font-black text-slate-500 uppercase mb-4">Enter Round Score</h3>
+                    <div id="he-inputs" class="space-y-3"></div>
+                    
+                    <div class="mt-6 space-y-3">
+                        <button id="he-verify-btn" onclick="verifyHeScore()" class="w-full bg-rose-600 py-4 rounded-2xl font-black">Verify Score</button>
+                        <button id="he-record-btn" onclick="recordHeRound()" class="hidden w-full bg-green-600 py-4 rounded-2xl font-black shadow-lg shadow-green-500/20">Confirm Score</button>
+                    </div>
+                </div>
+
+                <div class="glass rounded-[24px] overflow-hidden">
+                    <table class="w-full text-[10px] text-center">
+                        <tbody id="he-history" class="divide-y divide-slate-800"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Shoot the Moon Modal -->
+            <div id="he-moon-modal" class="fixed inset-0 bg-slate-950/90 z-50 hidden flex items-center justify-center p-6">
+                <div class="glass p-8 rounded-[40px] w-full max-w-sm text-center space-y-6">
+                    <div class="text-5xl">🌙</div>
+                    <h2 class="text-2xl font-black text-rose-400">Congratulations, you got the lot!</h2>
+                    <p class="text-slate-400 text-sm">How would you like to apply your points?</p>
+                    <div class="grid grid-cols-1 gap-3">
+                        <button onclick="applyMoon('minus')" class="bg-indigo-600 py-4 rounded-2xl font-bold">Take 115 off my score</button>
+                        <button onclick="applyMoon('plus')" class="bg-slate-700 py-4 rounded-2xl font-bold">Give 115 to everyone else</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Final Rankings -->
+            <div id="he-results" class="fixed inset-0 bg-slate-950 z-[60] hidden flex flex-col items-center justify-center p-8 overflow-y-auto">
+                <h2 class="text-4xl font-black mb-12 tracking-tighter">FINAL RANKINGS</h2>
+                <div id="he-rank-list" class="w-full max-w-sm space-y-4 mb-12"></div>
+                <button onclick="location.reload()" class="bg-slate-800 px-8 py-3 rounded-full font-bold text-slate-400 text-xs tracking-widest uppercase">New Game</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Universal Toast -->
+    <div id="toast" class="fixed top-8 left-1/2 -translate-x-1/2 glass px-6 py-3 rounded-2xl text-rose-400 font-bold text-sm shadow-2xl opacity-0 transition-all pointer-events-none z-[100] text-center max-w-[80vw]"></div>
+
+    <script>
+        // --- DATA & STATE ---
+        const categories = {
+            "Objects": ["Pencil", "Umbrella", "Toaster", "Backpack", "Watch", "Spoon", "Telescope", "Guitar", "Ladder", "Bucket"],
+            "People": ["Einstein", "Elvis", "Napoleon", "Cleopatra", "Batman", "Messi", "Madonna", "Gandhi", "Aristotle", "Picasso"],
+            "Countries": ["Japan", "Brazil", "Canada", "Egypt", "France", "Australia", "Thailand", "Mexico", "Iceland", "Kenya"],
+            "Animals": ["Elephant", "Giraffe", "Penguin", "Octopus", "Cheetah", "Kangaroo", "Wolf", "Platypus", "Eagle", "Cobra"],
+            "Movies": ["Titanic", "Inception", "Jaws", "Avatar", "Shrek", "Star Wars", "Matrix", "Interstellar", "Alien", "Frozen"],
+            "Food": ["Pizza", "Sushi", "Hamburger", "Pancakes", "Croissant", "Tacos", "Lasagna", "Dim Sum", "Curry", "Steak"],
+            "Cities": ["London", "Paris", "New York", "Tokyo", "Rome", "Berlin", "Dubai", "Sydney", "Barcelona", "Toronto"],
+            "Brands": ["Apple", "Nike", "Google", "Tesla", "Coca-Cola", "Lego", "McDonalds", "Amazon", "IKEA", "Netflix"],
+            "Jobs": ["Chef", "Doctor", "Pilot", "Artist", "Astronaut", "Firefighter", "Judge", "Diver", "Farmer", "Architect"],
+            "Sports": ["Tennis", "Boxing", "Cricket", "Soccer", "Golf", "Swimming", "Skiing", "Fencing", "Rugby", "Surfing"]
+        };
+
+        let activeTab = 'imposter';
+
+        // --- NAVIGATION ---
+        function switchTab(tab) {
+            activeTab = tab;
+            ['imposter', 'whist', 'hearts'].forEach(id => {
+                const viewEl = document.getElementById(`view-${id}`);
+                const tabEl = document.getElementById(`tab-${id}`);
+                if (viewEl) viewEl.classList.add('hidden');
+                if (tabEl) tabEl.classList.remove('active-tab');
+            });
+            const activeView = document.getElementById(`view-${tab}`);
+            const activeNav = document.getElementById(`tab-${tab}`);
+            if (activeView) activeView.classList.remove('hidden');
+            if (activeNav) activeNav.classList.add('active-tab');
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            if (!t) return;
+            t.innerText = msg;
+            t.style.opacity = '1';
+            t.style.transform = 'translate(-50%, 10px)';
+            setTimeout(() => {
+                t.style.opacity = '0';
+                t.style.transform = 'translate(-50%, 0)';
+            }, 3000);
+        }
+
+        // --- IMPOSTER ---
+        let impState = { players: 0, imposters: 0, secret: '', roles: [], currentIdx: 0 };
+
+        function initImposterCats() {
+            const grid = document.getElementById('im-cats');
+            if(!grid) return;
+            grid.innerHTML = '';
+            Object.keys(categories).forEach(cat => {
+                grid.innerHTML += `
+                    <label class="flex items-center gap-2 bg-slate-900 p-2 rounded-xl border border-slate-700 cursor-pointer">
+                        <input type="checkbox" checked value="${cat}" class="im-cat-check accent-indigo-500">
+                        <span class="text-[10px] font-bold">${cat}</span>
+                    </label>
+                `;
+            });
+        }
+
+        function updateImLabels() {
+            const p = document.getElementById('im-p-count').value;
+            const i = document.getElementById('im-i-count');
+            if (parseInt(i.value) >= p - 1) i.value = p - 2;
+            document.getElementById('p-count-label').innerText = p;
+            document.getElementById('i-count-label').innerText = i.value;
+        }
+
+        function startImposter() {
+            const selected = Array.from(document.querySelectorAll('.im-cat-check:checked')).map(el => el.value);
+            if (!selected.length) return alert("Select at least one category!");
+
+            const pool = selected.flatMap(cat => categories[cat]);
+            impState.secret = pool[Math.floor(Math.random() * pool.length)];
+            impState.players = parseInt(document.getElementById('im-p-count').value);
+            impState.imposters = parseInt(document.getElementById('im-i-count').value);
+            impState.currentIdx = 0;
+            impState.roles = new Array(impState.players).fill('player');
+
+            let assigned = 0;
+            while(assigned < impState.imposters) {
+                let r = Math.floor(Math.random() * impState.players);
+                if (impState.roles[r] === 'player') {
+                    impState.roles[r] = 'imposter';
+                    assigned++;
+                }
+            }
+
+            document.getElementById('im-setup').classList.add('hidden');
+            document.getElementById('im-play').classList.remove('hidden');
+            updateImUI();
+        }
+
+        function updateImUI() {
+            document.getElementById('im-player-name').innerText = `Player ${impState.currentIdx + 1}`;
+            document.getElementById('im-reveal-btn').classList.remove('hidden');
+            document.getElementById('im-secret-box').classList.add('hidden');
+            document.getElementById('im-next-btn').classList.add('hidden');
+        }
+
+        function imReveal() {
+            const isImp = impState.roles[impState.currentIdx] === 'imposter';
+            const wordEl = document.getElementById('im-secret-word');
+            wordEl.innerText = isImp ? "YOU ARE THE IMPOSTER" : impState.secret;
+            wordEl.className = isImp ? "text-2xl font-black text-rose-500" : "text-4xl font-black text-indigo-400 uppercase tracking-tight";
+            
+            document.getElementById('im-reveal-btn').classList.add('hidden');
+            document.getElementById('im-secret-box').classList.remove('hidden');
+            document.getElementById('im-next-btn').classList.remove('hidden');
+        }
+
+        function imNext() {
+            impState.currentIdx++;
+            if (impState.currentIdx >= impState.players) {
+                alert("Everyone knows their role. Start the investigation!");
+                document.getElementById('im-setup').classList.remove('hidden');
+                document.getElementById('im-play').classList.add('hidden');
+            } else {
+                updateImUI();
+            }
+        }
+
+        // --- WHIST ---
+        let whState = { players: [], rounds: [], seq: [], currentIdx: 0, zeros: [], trumps: ['♠️','♥️','♦️','♣️','🃏'] };
+
+        function addWhPlayer() {
+            const list = document.getElementById('wh-p-list');
+            if (!list) return;
+            const n = list.children.length + 1;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = `Player ${n}`;
+            input.className = 'wh-p-input w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 outline-none focus:border-indigo-500';
+            list.appendChild(input);
+        }
+
+        function startWhist() {
+            whState.players = Array.from(document.querySelectorAll('.wh-p-input')).map(i => i.value || i.placeholder);
+            whState.zeros = new Array(whState.players.length).fill(0);
+            whState.rounds = [];
+            whState.currentIdx = 0;
+
+            const mode = document.getElementById('wh-length').value;
+            if (mode === '7-1-7') whState.seq = [7,6,5,4,3,2,1,2,3,4,5,6,7];
+            else if (mode === '10-1-10') whState.seq = [10,9,8,7,6,5,4,3,2,1,2,3,4,5,6,7,8,9,10];
+            else whState.seq = [10,9,8,7,6,5,4,3,2,1];
+
+            document.getElementById('wh-setup').classList.add('hidden');
+            document.getElementById('wh-game').classList.remove('hidden');
+            initWhRound();
+            updateWhScores();
+        }
+
+        function initWhRound() {
+            const cards = whState.seq[whState.currentIdx];
+            const dIdx = whState.currentIdx % whState.players.length;
+            document.getElementById('wh-round-lbl').innerText = `Round ${whState.currentIdx + 1}`;
+            document.getElementById('wh-card-lbl').innerText = `${cards} Card${cards > 1 ? 's' : ''}`;
+            document.getElementById('wh-trump-box').innerText = whState.trumps[whState.currentIdx % 5];
+
+            const cont = document.getElementById('wh-bid-inputs');
+            if (!cont) return;
+            cont.innerHTML = '';
+            whState.players.forEach((p, i) => {
+                const isD = i === dIdx;
+                const canZero = whState.zeros[i] < 2;
+                cont.innerHTML += `
+                    <div class="bg-slate-900/40 p-3 rounded-2xl border ${isD?'border-indigo-500':'border-slate-800'} flex justify-between items-center transition-all">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold text-slate-300">${p}${isD?' (Dealer)':''}</span>
+                            ${!canZero ? '<span class="text-[8px] font-black text-amber-500 uppercase">Must Bid > 0</span>' : ''}
+                        </div>
+                        <div class="flex items-center gap-2">
+                            ${isD ? '<span id="wh-forb-lbl" class="text-[9px] font-black text-rose-500 uppercase"></span>' : ''}
+                            <input type="number" id="wh-bid-${i}" min="0" max="${cards}" class="wh-bid-val bg-slate-800 w-12 text-center p-1 rounded font-bold" oninput="updateWhForbidden()">
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('wh-bid-phase').classList.remove('hidden');
+            document.getElementById('wh-res-phase').classList.add('hidden');
+            updateWhForbidden();
+        }
+
+        function updateWhForbidden() {
+            const cards = whState.seq[whState.currentIdx];
+            const dIdx = whState.currentIdx % whState.players.length;
+            let sumOthers = 0;
+            document.querySelectorAll('.wh-bid-val').forEach((el, i) => {
+                if(i !== dIdx) sumOthers += (parseInt(el.value) || 0);
+            });
+            const forb = cards - sumOthers;
+            const lbl = document.getElementById('wh-forb-lbl');
+            if(lbl) lbl.innerText = (forb >= 0 && forb <= cards) ? `Can't bid ${forb}` : '';
+        }
+
+        function lockWhBids() {
+            const cards = whState.seq[whState.currentIdx];
+            const dIdx = whState.currentIdx % whState.players.length;
+            let total = 0;
+            const bids = [];
+            
+            for(let i=0; i<whState.players.length; i++) {
+                const val = parseInt(document.getElementById(`wh-bid-${i}`).value);
+                if (isNaN(val) || val < 0) return showToast("Bids cannot be negative.");
+                if (val === 0 && whState.zeros[i] >= 2) return showToast(`${whState.players[i]} has bid zero too many times!`);
+                bids.push(val);
+                total += val;
+            }
+
+            if (total === cards) return showToast("Bids equal tricks! Dealer must change.");
+
+            const resCont = document.getElementById('wh-res-inputs');
+            if (!resCont) return;
+            resCont.innerHTML = '';
+            whState.players.forEach((p, i) => {
+                resCont.innerHTML += `
+                    <div class="bg-slate-900/40 p-3 rounded-2xl border border-slate-800 flex justify-between items-center">
+                        <div class="flex flex-col"><span class="text-xs font-bold text-slate-300">${p}</span><span class="text-[9px] text-indigo-400 font-bold">Bidded: ${bids[i]}</span></div>
+                        <input type="number" id="wh-res-${i}" min="0" class="bg-slate-800 w-12 text-center p-2 rounded-lg font-bold border border-slate-700">
+                    </div>
+                `;
+            });
+            document.getElementById('wh-bid-phase').classList.add('hidden');
+            document.getElementById('wh-res-phase').classList.remove('hidden');
+        }
+
+        function unlockWhBids() {
+            document.getElementById('wh-bid-phase').classList.remove('hidden');
+            document.getElementById('wh-res-phase').classList.add('hidden');
+        }
+
+        function finishWhRound() {
+            const cards = whState.seq[whState.currentIdx];
+            const bids = whState.players.map((_, i) => parseInt(document.getElementById(`wh-bid-${i}`).value)||0);
+            const ress = whState.players.map((_, i) => parseInt(document.getElementById(`wh-res-${i}`).value)||0);
+            
+            if (ress.reduce((a,b)=>a+b,0) !== cards) return showToast("Tricks must total cards!");
+
+            const scores = bids.map((b, i) => (b === ress[i] ? (10 + ress[i]) : ress[i]));
+            
+            // Update zero streaks
+            bids.forEach((b, i) => {
+                if (b === 0) whState.zeros[i]++;
+                else whState.zeros[i] = 0;
+            });
+
+            whState.rounds.push({ scores, cards, bids, ress });
+            whState.currentIdx++;
+
+            if (whState.currentIdx >= whState.seq.length) {
+                alert("Whist Game Complete!");
+                location.reload();
+            } else {
+                initWhRound();
+                updateWhScores();
+                renderWhHistory();
+            }
+        }
+
+        function updateWhScores() {
+            const cont = document.getElementById('wh-scores');
+            if (!cont) return;
+            cont.innerHTML = '';
+            whState.players.forEach((p, i) => {
+                const total = whState.rounds.reduce((s, r) => s + r.scores[i], 0);
+                cont.innerHTML += `
+                    <div class="flex-shrink-0 bg-slate-800 border border-slate-700 p-4 rounded-3xl min-w-[100px] text-center">
+                        <div class="text-[10px] uppercase font-bold text-slate-500 truncate mb-1">${p}</div>
+                        <div class="text-2xl font-black">${total}</div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderWhHistory() {
+            const h = document.getElementById('wh-history');
+            if (!h) return;
+            h.innerHTML = '';
+            [...whState.rounds].reverse().forEach((r, idx) => {
+                const realIdx = whState.rounds.length - 1 - idx;
+                h.innerHTML += `
+                    <tr class="hover:bg-slate-800/20">
+                        <td class="p-3 font-bold text-slate-500">${realIdx + 1}</td>
+                        <td class="p-3 font-black">${r.cards}</td>
+                        <td class="p-3 text-center text-slate-400 font-bold">${r.scores.join(' · ')}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- HEARTS ---
+        let heState = { players: [], rounds: [], totals: [], target: 500, pending: [], moonIdx: -1 };
+
+        function addHePlayer() {
+            const list = document.getElementById('he-p-list');
+            if (!list) return;
+            const n = list.children.length + 1;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = `Player ${n}`;
+            input.className = 'he-p-input w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 outline-none focus:border-rose-500';
+            list.appendChild(input);
+        }
+
+        function startHearts() {
+            heState.players = Array.from(document.querySelectorAll('.he-p-input')).map(i => i.value || i.placeholder);
+            heState.target = parseInt(document.getElementById('he-target-val').value);
+            heState.totals = new Array(heState.players.length).fill(0);
+            heState.rounds = [];
+
+            document.getElementById('he-setup').classList.add('hidden');
+            document.getElementById('he-game').classList.remove('hidden');
+            
+            renderHeInputs();
+            updateHeScores();
+        }
+
+        function renderHeInputs() {
+            const cont = document.getElementById('he-inputs');
+            if(!cont) return;
+            cont.innerHTML = '';
+            heState.players.forEach((p, i) => {
+                cont.innerHTML += `
+                    <div class="bg-slate-900/50 p-3 rounded-2xl border border-slate-800 flex justify-between items-center">
+                        <span class="text-xs font-bold text-slate-300">${p}</span>
+                        <input type="number" id="he-in-${i}" class="bg-slate-800 w-24 text-center p-2 rounded-xl font-bold border border-slate-700 text-lg outline-none focus:border-rose-500">
+                    </div>
+                `;
+            });
+            document.getElementById('he-verify-btn').classList.remove('hidden');
+            document.getElementById('he-record-btn').classList.add('hidden');
+        }
+
+        function verifyHeScore() {
+            const round = heState.players.map((_, i) => parseInt(document.getElementById(`he-in-${i}`).value) || 0);
+            const sum = round.reduce((a, b) => a + b, 0);
+
+            if (sum !== 115 && !round.includes(115)) {
+                return showToast(`Score should equal 115 (Current: ${sum})`);
+            }
+
+            heState.pending = round;
+            const mIdx = round.indexOf(115);
+            if (mIdx !== -1) {
+                heState.moonIdx = mIdx;
+                document.getElementById('he-moon-modal').classList.remove('hidden');
+            } else {
+                document.getElementById('he-verify-btn').classList.add('hidden');
+                document.getElementById('he-record-btn').classList.remove('hidden');
+            }
+        }
+
+        function applyMoon(type) {
+            const round = [...heState.pending];
+            if (type === 'minus') {
+                heState.pending = round.map((s, i) => i === heState.moonIdx ? -115 : 0);
+            } else {
+                heState.pending = round.map((s, i) => i === heState.moonIdx ? 0 : 115);
+            }
+            document.getElementById('he-moon-modal').classList.add('hidden');
+            document.getElementById('he-verify-btn').classList.add('hidden');
+            document.getElementById('he-record-btn').classList.remove('hidden');
+        }
+
+        function recordHeRound() {
+            heState.rounds.push(heState.pending);
+            heState.pending.forEach((s, i) => heState.totals[i] += s);
+            
+            updateHeScores();
+            renderHeHistory();
+            renderHeInputs();
+
+            if (heState.totals.some(t => t >= heState.target)) {
+                showFinalHeRankings();
+            }
+        }
+
+        function updateHeScores() {
+            const cont = document.getElementById('he-scores');
+            if(!cont) return;
+            cont.innerHTML = '';
+            heState.players.forEach((p, i) => {
+                cont.innerHTML += `
+                    <div class="flex-shrink-0 bg-slate-800 border border-slate-700 p-4 rounded-3xl min-w-[100px] text-center">
+                        <div class="text-[10px] uppercase font-bold text-slate-500 truncate mb-1">${p}</div>
+                        <div class="text-2xl font-black text-rose-400">${heState.totals[i]}</div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderHeHistory() {
+            const h = document.getElementById('he-history');
+            if(!h) return;
+            h.innerHTML = '';
+            [...heState.rounds].reverse().forEach(r => {
+                h.innerHTML += `<tr><td class="p-3 text-slate-500 font-bold tracking-widest uppercase">${r.join(' · ')}</td></tr>`;
+            });
+        }
+
+        function showFinalHeRankings() {
+            const ranked = heState.players.map((p, i) => ({ name: p, score: heState.totals[i] }))
+                .sort((a, b) => a.score - b.score);
+            
+            const list = document.getElementById('he-rank-list');
+            if(!list) return;
+            list.innerHTML = '';
+            
+            ranked.forEach((p, idx) => {
+                const item = document.createElement('div');
+                item.className = 'glass p-6 rounded-[32px] flex justify-between items-center animate-rank';
+                item.style.animationDelay = `${idx * 0.1}s`;
+                item.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <span class="text-2xl font-black ${idx===0?'text-amber-400':'text-slate-500'}">#${idx+1}</span>
+                        <span class="font-bold">${p.name}</span>
+                    </div>
+                    <span class="font-black text-rose-400">${p.score} pts</span>
+                `;
+                list.appendChild(item);
+            });
+
+            document.getElementById('he-results').classList.remove('hidden');
+        }
+
+        // --- INIT ---
+        window.onload = () => {
+            initImposterCats();
+            switchTab('imposter');
+        };
+    </script>
+</body>
+</html>
